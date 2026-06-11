@@ -2,170 +2,185 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Superstars CC – Player Availability</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superstars Cricket Club – Availability</title>
 
 <style>
     body {
         margin: 0;
-        font-family: Arial, sans-serif;
-        background: #f5f5f5;
+        font-family: "Segoe UI", sans-serif;
+        background: #f4f4f4;
+        color: #222;
     }
- 
-    /* Sticky top bar */
+
+    /* Sticky Navigation */
     .navbar {
         position: sticky;
         top: 0;
-        background: #003399;
-        color: white;
-        padding: 12px;
-        font-size: 20px;
-        text-align: center;
         z-index: 1000;
+        background: #003399;
+        padding: 12px 20px;
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        border-bottom: 4px solid gold;
+    }
+    .navbar a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 6px;
+        transition: background 0.3s;
+    }
+    .navbar a:hover, .navbar a.active {
+        background: gold;
+        color: #003399;
+    }
+
+    /* Hero Banner */
+    .hero {
+        background: linear-gradient(135deg, #003399, #0055cc);
+        color: white;
+        padding: 60px 20px;
+        text-align: center;
+        border-bottom: 6px solid gold;
+        animation: fadeIn 1s ease-out;
+    }
+
+    /* Section Cards */
+    .section {
+        background: white;
+        margin: 30px auto;
+        padding: 25px;
+        max-width: 1000px;
+        border-radius: 12px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        animation: slideUp 0.6s ease-out;
+    }
+
+    iframe {
+        width: 100%;
+        border: none;
+        border-radius: 8px;
     }
 
     /* Tabs */
-    .tabs {
-        display: flex;
-        background: #002266;
-    }
-    .tab {
-        flex: 1;
-        padding: 12px;
-        text-align: center;
-        color: white;
-        cursor: pointer;
-        border-bottom: 3px solid transparent;
-    }
-    .tab.active {
-        border-bottom: 3px solid gold;
-        background: #003399;
-    }
-
-    /* Content areas */
-    .content {
+    .tab-content {
         display: none;
-        padding: 20px;
-        animation: fadeIn 0.4s ease;
     }
-    .content.active {
+    .tab-content.active {
         display: block;
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Form styling */
-    label {
-        display: block;
-        margin-top: 12px;
-        font-weight: bold;
-    }
-    input, select {
-        width: 100%;
-        padding: 10px;
-        margin-top: 6px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-    }
-    button {
-        margin-top: 20px;
-        width: 100%;
-        padding: 12px;
-        background: #003399;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-    button:hover {
-        background: #001f66;
-    }
-
-    /* Toast message */
+    /* Toast Message */
     #toast {
         visibility: hidden;
         min-width: 250px;
-        background-color: #333;
-        color: #fff;
+        background-color: #003399;
+        color: white;
         text-align: center;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 16px;
         position: fixed;
         z-index: 2000;
         left: 50%;
-        bottom: 30px;
+        bottom: 40px;
         transform: translateX(-50%);
-        font-size: 17px;
+        font-size: 16px;
+        border: 3px solid gold;
     }
     #toast.show {
         visibility: visible;
-        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadeInOut 3s;
     }
-    @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
-    @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
 
-    /* Table */
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
+    @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
-    th {
-        background: #003399;
-        color: white;
+    @keyframes fadeInOut {
+        0% { opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { opacity: 0; }
     }
 </style>
-</head>
 
+<script>
+    function showTab(tabId, element) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+
+        document.querySelectorAll('.navbar a').forEach(a => a.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    // Toast trigger from iframe
+    window.addEventListener("message", function(event) {
+        if (event.data === "availabilitySubmitted") {
+            let toast = document.getElementById("toast");
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 3000);
+        }
+    });
+</script>
+
+</head>
 <body>
 
-<div class="navbar">Superstars Cricket Club – Player Availability</div>
-
-<div class="tabs">
-    <div class="tab active" onclick="switchTab('formTab')">Form</div>
-    <div class="tab" onclick="switchTab('viewerTab')">Viewer</div>
-    <div class="tab" onclick="switchTab('fixturesTab')">Fixtures</div>
+<div class="hero">
+    <h1>Superstars Cricket Club</h1>
+    <h2>Match Availability Portal</h2>
 </div>
 
-<!-- FORM TAB -->
-<div id="formTab" class="content active">
-    <h2>Submit Availability</h2>
-
-    <label>Player Name</label>
-    <input id="playerName" placeholder="Enter your name">
-
-    <label>Match Date</label>
-    <input type="date" id="matchDate">
-
-    <label>Availability</label>
-    <select id="availability">
-        <option value="Available">Available</option>
-        <option value="Not Available">Not Available</option>
-        <option value="Unsure">Unsure</option>
-    </select>
-
-    <button onclick="submitAvailability()">Submit</button>
+<!-- Sticky Navigation Tabs -->
+<div class="navbar">
+    <a href="#" class="active" onclick="showTab('formTab', this)">Form</a>
+    <a href="#" onclick="showTab('viewerTab', this)">Viewer</a>
+    <a href="#" onclick="showTab('fixturesTab', this)">Fixtures</a>
 </div>
 
-<!-- VIEWER TAB -->
-<div id="viewerTab" class="content">
-    <h2>Availability Viewer</h2>
-    <div id="viewerContent">Loading...</div>
+<!-- Tabs Content -->
+<div id="formTab" class="tab-content active">
+    <div class="section">
+        <h3>Submit Your Availability</h3>
+        <iframe
+            src="https://superstars80d3.z33.web.core.windows.net/availability-form.html
+"
+            height="900">
+        </iframe>
+    </div>
 </div>
 
-<!-- FIXTURES TAB -->
-<div id="fixturesTab" class="content">
-    <h2>Fixtures</h2>
-    <div id="fixturesContent">Loading fixtures...</div>
+<div id="viewerTab" class="tab-content">
+    <div class="section">
+        <h3>Live Availability Viewer</h3>
+        <iframe
+            src="https://superstars80d3.z33.web.core.windows.net/availability-viewer.html"
+            height="900">
+        </iframe>
+    </div>
+</div>
+
+<div id="fixturesTab" class="tab-content">
+    <div class="section">
+        <h3>Fixtures</h3>
+        <iframe
+            src="https://www.superstarscricket.org.uk/fixtures/2026.html"
+            height="900">
+        </iframe>
+    </div>
 </div>
 
 <!-- Toast -->
+<div id="toast">Availability Submitted ✔</div>
+</body>
+</html>
+
 <div id="toast">Submitted successfully
