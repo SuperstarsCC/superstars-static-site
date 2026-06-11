@@ -1,10 +1,171 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Superstars Availability</title>
-  </head>
-  <body>
-    <h1>Superstars Availability Page</h1>
-    <p>This is a test deployment.</p>
-  </body>
-</html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Superstars CC – Player Availability</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+    }
+
+    /* Sticky top bar */
+    .navbar {
+        position: sticky;
+        top: 0;
+        background: #003399;
+        color: white;
+        padding: 12px;
+        font-size: 20px;
+        text-align: center;
+        z-index: 1000;
+    }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        background: #002266;
+    }
+    .tab {
+        flex: 1;
+        padding: 12px;
+        text-align: center;
+        color: white;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+    }
+    .tab.active {
+        border-bottom: 3px solid gold;
+        background: #003399;
+    }
+
+    /* Content areas */
+    .content {
+        display: none;
+        padding: 20px;
+        animation: fadeIn 0.4s ease;
+    }
+    .content.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Form styling */
+    label {
+        display: block;
+        margin-top: 12px;
+        font-weight: bold;
+    }
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+    button {
+        margin-top: 20px;
+        width: 100%;
+        padding: 12px;
+        background: #003399;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #001f66;
+    }
+
+    /* Toast message */
+    #toast {
+        visibility: hidden;
+        min-width: 250px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 16px;
+        position: fixed;
+        z-index: 2000;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        font-size: 17px;
+    }
+    #toast.show {
+        visibility: visible;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+    @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+    @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+    /* Table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+    th {
+        background: #003399;
+        color: white;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="navbar">Superstars Cricket Club – Player Availability</div>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('formTab')">Form</div>
+    <div class="tab" onclick="switchTab('viewerTab')">Viewer</div>
+    <div class="tab" onclick="switchTab('fixturesTab')">Fixtures</div>
+</div>
+
+<!-- FORM TAB -->
+<div id="formTab" class="content active">
+    <h2>Submit Availability</h2>
+
+    <label>Player Name</label>
+    <input id="playerName" placeholder="Enter your name">
+
+    <label>Match Date</label>
+    <input type="date" id="matchDate">
+
+    <label>Availability</label>
+    <select id="availability">
+        <option value="Available">Available</option>
+        <option value="Not Available">Not Available</option>
+        <option value="Unsure">Unsure</option>
+    </select>
+
+    <button onclick="submitAvailability()">Submit</button>
+</div>
+
+<!-- VIEWER TAB -->
+<div id="viewerTab" class="content">
+    <h2>Availability Viewer</h2>
+    <div id="viewerContent">Loading...</div>
+</div>
+
+<!-- FIXTURES TAB -->
+<div id="fixturesTab" class="content">
+    <h2>Fixtures</h2>
+    <div id="fixturesContent">Loading fixtures...</div>
+</div>
+
+<!-- Toast -->
+<div id="toast">Submitted successfully
