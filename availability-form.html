@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Match Availability Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    #result {
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Match Availability Form</h2>
+
+  <form id="availabilityForm">
+    <label for="playerId">Player</label>
+    <select id="playerId" required>
+      <option value="">Select player</option>
+    </select>
+
+    <label for="matchId">Match</label>
+    <select id="matchId" required>
+      <option value="">Select match</option>
+    </select>
+
+    <label for="availability">Availability</label>
+    <select id="availability" required>
+      <option value="">Select</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+      <option value="maybe">Maybe</option>
+    </select>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const apiBase = "https://match-availability-api01-h6erbtbka3gvg8b3.westeurope-01.azurewebsites.net/api";
+
+    async function loadFormData() {
+      try {
+        const res = await fetch(apiBase + "/getavailability");
+        if (!res.ok) {
+          throw new Error("Failed to load players and fixtures");
+        }
+
+        const data = await res.json();
+
+        const playerSelect = document.getElementById("playerId");
+        const matchSelect = document.getElementById("matchId");
+
+        const selectedPlayer = playerSelect.value;
+        const selectedMatch = matchSelect.value;
+
+        playerSelect.innerHTML = '<option value="">Select player</option>';
+        matchSelect.innerHTML = '<option value="">Select match</option>';
+
+        data.players.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = p.PlayerId;
+          opt.textContent = p.PlayerName;
+          if (String(p.PlayerId) === String(selectedPlayer)) {
+            opt.selected = true;
+          }
+          playerSelect.appendChild(opt);
+        });
+
+        data.fixtures.forEach(m => {
+          const opt = document.createElement("option");
+          opt.value = m.MatchId;   // keep exact string as-is
+          opt.textContent = `${m.MatchName} (${m.MatchId})`;
+          if (String(m.MatchId) === String(selectedMatch)) {
+            opt.selected = true;
+          }
+          matchSelect.appendChild(opt);
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById("result").innerHTML =
+          "<span style='color:red;'>Error loading players or fixtures.</span>";
+      }
+    }
+
+    document.getElementById("availabilityForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        matchId: document.getElementById("matchId").value,
+        playerId: parseInt(document.getElementById("playerId").value, 10),
+        availability: document.getElementById("availability").value
+      };
+
+      if (!payload.matchId || !payload.playerId || !payload.availability) {
+        document.getElementById("result").innerHTML =
+          "<span style='color:red;'>Please select a player, a match and an availability option.</span>";
+        return;
+      }
+
+      try {
+        const response = await fetch(apiBase + "/submitavailability", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = document.getElementById("result");
+
+        if (response.ok) {
+          result.innerHTML = "<span style='color:green;'>Availability saved.</span>";
+        } else {
+          const text = await response.text();
+          result.innerHTML = "<span style='color:red;'>Error: " + text + "</span>";
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("result").innerHTML =
+          "<span style='color:red;'>Submit failed.</span>";
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", loadFormData);
+  </script>
+</body>
+</html>
