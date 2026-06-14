@@ -1,0 +1,14 @@
+name: Keep SQL Warm
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # Every 15 minutes
+  workflow_dispatch:         # Allows manual run
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API to keep SQL warm
+        run: |
+          curl -s https://delightful-forest-040190503.7.azurestaticapps.net/api/getAvailability
