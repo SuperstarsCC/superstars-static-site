@@ -1,7 +1,20 @@
 const sql = require('mssql');
 
 module.exports = async function (context, req) {
-    const { matchId, playerId, availability } = req.body;
+
+    // Support BOTH JSON body and query string
+    const playerId = req.body?.playerId || req.query.playerId;
+    const matchId = req.body?.matchId || req.query.matchId;
+    const availability = req.body?.availability || req.query.availability;
+
+    // Validate required fields
+    if (!playerId || !matchId || !availability) {
+        context.res = {
+            status: 400,
+            body: "Missing required fields: playerId, matchId, availability"
+        };
+        return;
+    }
 
     try {
         await sql.connect(process.env.SQL_CONNECTION_STRING);
@@ -21,6 +34,14 @@ module.exports = async function (context, req) {
             status: 200,
             body: "Saved"
         };
+
+    } catch (err) {
+        context.res = {
+            status: 500,
+            body: err.message
+        };
+    }
+};
 
     } catch (err) {
         context.res = {
