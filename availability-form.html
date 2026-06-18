@@ -50,6 +50,24 @@
   </form>
 
   <div id="result"></div>
+<hr>
+
+<h3>Can't find your name?</h3>
+<p>If your name isn’t on the list, please let the admin team know and we’ll add you to the system.</p>
+
+<form id="missingPlayerForm">
+  <label for="missingName">Your Name</label>
+  <input type="text" id="missingName" required style="width:100%; padding:8px; margin-top:5px;">
+
+  <label for="missingEmail">Your Email</label>
+  <input type="email" id="missingEmail" required style="width:100%; padding:8px; margin-top:5px;">
+
+  <button type="submit" style="margin-top:10px;">Request to be Added</button>
+</form>
+
+<div id="missingPlayerMessage" style="color:green; margin-top:10px; display:none;">
+  Thank you — your request has been sent to the admin team.
+</div>
 
   <script>
     const apiBase = "/api";
@@ -139,5 +157,29 @@
 
     document.addEventListener("DOMContentLoaded", loadFormData);
   </script>
+<script>
+document.getElementById("missingPlayerForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById("missingName").value;
+  const email = document.getElementById("missingEmail").value;
+
+  const subject = encodeURIComponent("New Player Request");
+  const body = encodeURIComponent(
+    `A player has requested to be added:\n\nName: ${name}\nEmail: ${email}`
+  );
+
+  // Opens the user's email client with the message pre-filled
+  window.location.href = `mailto:osdsuperstars_cc@hotmail.co.uk?subject=${subject}&body=${body}`;
+
+  // Show confirmation message
+  document.getElementById("missingPlayerMessage").style.display = "block";
+
+  // Clear form
+  document.getElementById("missingPlayerForm").reset();
+});
+</script>
+
+
 </body>
 </html>
