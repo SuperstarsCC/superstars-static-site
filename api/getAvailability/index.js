@@ -1,44 +1,38 @@
-const sql = require('mssql');
+const { Pool } = require('pg');
+
+const pool = new Pool({
+    connectionString: process.env.NEON_CONNECTION_STRING
+});
 
 module.exports = async function (context, req) {
+    context.log("getAvailability called");
+
+    context.res = {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json"
+        }
+    };
+
     try {
-        // Connect to SQL using your connection string in Application Settings
-        await sql.connect(process.env.SQL_CONNECTION_STRING);
+        const result = await pool.query(`
+            SELECT 
+                ma.id,
+                ma.matchid,
+                ma.playerid,
+                ma.availability,
+                ma.lastupdated,
+                cp.playername
+            FROM matchavailability ma
+            LEFT JOIN currentplayers cp ON cp.playerid = ma.playerid
+            ORDER BY ma.lastupdated DESC;
+        `);
 
-        // Get players
-        const playersResult = await sql.query`
-            SELECT PlayerId, PlayerName
-            FROM CurrentPlayers
-            ORDER BY PlayerName;
-        `;
-
-        // Get fixtures
-        const fixturesResult = await sql.query`
-            SELECT MatchId, MatchName
-        FROM Fixtures
-        ORDER BY 
-        CASE 
-        WHEN MatchId LIKE 'Match%' 
-        THEN TRY_CAST(SUBSTRING(MatchId, 6, LEN(MatchId)) AS INT)
-        ELSE 9999
-        END,
-     MatchName;
-        `;
-
-        // Return both lists
-        context.res = {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-            body: {
-                players: playersResult.recordset,
-                fixtures: fixturesResult.recordset
-            }
-        };
-
+        context.res.body = result.rows;
     } catch (err) {
-        context.res = {
-            status: 500,
-            body: err.message
-        };
+        context.log("Error:", err);
+        context.res.status = 500;
+        context.res.body = { error: "Database error", details: err.message };
     }
 };
+
