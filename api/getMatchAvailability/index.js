@@ -1,48 +1,53 @@
-const sql = require('mssql');
+const { Pool } = require('pg');
+
+const pool = new Pool({
+    connectionString: process.env.NEON_CONNECTION_STRING
+});
 
 module.exports = async function (context, req) {
-    const matchId = (req.query.matchId || (req.body && req.body.matchId) || '').trim();
+    context.log("getMatchAvailability called");
+
+    const matchId = (req.query.matchId || req.body?.matchId || "").trim();
+
+    context.res = {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json"
+        }
+    };
 
     if (!matchId) {
-        context.res = {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-            body: { error: "Please provide matchId" }
-        };
+        context.res.status = 400;
+        context.res.body = { error: "Please provide matchId" };
         return;
     }
 
     try {
-        await sql.connect(process.env.SQL_CONNECTION_STRING);
-
-        const request = new sql.Request();
-        request.input('matchId', sql.NVarChar(50), matchId);
-
-        const result = await request.query(`
+        const result = await pool.query(
+            `
             SELECT 
-                p.PlayerName,
-                a.Availability,
-                a.LastUpdated
-            FROM MatchAvailability a
-            INNER JOIN CurrentPlayers p
-                ON p.PlayerId = a.PlayerId
-            WHERE a.MatchId = @matchId
-            ORDER BY p.PlayerName;
-        `);
+                ma.matchid,
+                ma.playerid,
+                ma.availability,
+                ma.lastupdated,
+                cp.playername
+            FROM matchavailability ma
+            INNER JOIN currentplayers cp
+                ON cp.playerid = ma.playerid
+            WHERE ma.matchid = $1
+            ORDER BY cp.playername ASC;
+            `,
+            [matchId]
+        );
 
-        context.res = {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-            body: result.recordset
-        };
+        context.res.status = 200;
+        context.res.body = result.rows;
 
     } catch (err) {
-        context.log.error("getmatchavailability error:", err);
+        context.log.error("getMatchAvailability error:", err);
 
-        context.res = {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-            body: { error: err.message }
-        };
+        context.res.status = 500;
+        context.res.body = { error: err.message };
     }
 };
+
