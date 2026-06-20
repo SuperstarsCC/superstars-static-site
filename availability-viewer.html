@@ -55,49 +55,44 @@
 <div id="availabilityList"></div>
 
 <script>
-
 const apiBase = "/api";
 
-
 //
-// Load fixtures into dropdown
+// Load matches into dropdown
 //
 async function loadFixtures() {
   try {
     const res = await fetch(apiBase + "/getavailability");
-
-    if (!res.ok) {
-      throw new Error("Failed to load fixtures");
-    }
+    if (!res.ok) throw new Error("Failed to load fixtures");
 
     const data = await res.json();
     const matchSelect = document.getElementById("matchId");
 
     matchSelect.innerHTML = '<option value="">Select match</option>';
 
-    data.fixtures.forEach(m => {
+    // Extract unique matches
+    const uniqueMatches = [...new Map(
+      data.map(m => [m.matchid, m])
+    ).values()];
+
+    uniqueMatches.forEach(m => {
       const opt = document.createElement("option");
-
-      // IMPORTANT: use the EXACT MatchId string
-      opt.value = m.MatchId;
-
-      opt.textContent = `${m.MatchName} (${m.MatchId})`;
-
+      opt.value = m.matchid;
+      opt.textContent = m.matchid; // No MatchName in Neon version
       matchSelect.appendChild(opt);
     });
 
   } catch (err) {
     console.error(err);
     document.getElementById("message").innerHTML =
-      "<span style='color:red;'>Error loading fixtures.</span>";
+      "<span style='color:red;'>Error loading matches.</span>";
   }
 }
 
 //
-// Load availability list
+// Load availability for selected match
 //
 async function loadMatchAvailability(matchId) {
-
   const list = document.getElementById("availabilityList");
   const message = document.getElementById("message");
 
@@ -105,14 +100,9 @@ async function loadMatchAvailability(matchId) {
   message.innerHTML = "";
 
   try {
-    const safeMatchId = String(matchId).trim();
-
-    const url =
-      apiBase + "/getmatchavailability?matchId=" + encodeURIComponent(safeMatchId);
-
+    const url = apiBase + "/getmatchavailability?matchId=" + encodeURIComponent(matchId);
     const res = await fetch(url);
 
-    // If nothing returned yet
     if (!res.ok) {
       message.innerHTML = "No availability submitted yet for this match.";
       return;
@@ -125,19 +115,17 @@ async function loadMatchAvailability(matchId) {
       return;
     }
 
-    // ✅ Display each player row
+    // Display each row
     data.forEach(row => {
-
       const div = document.createElement("div");
 
       let colour = "#666";
-
-      if (row.Availability === "yes") colour = "green";
-      if (row.Availability === "no") colour = "red";
-      if (row.Availability === "maybe") colour = "orange";
+      if (row.availability === "yes") colour = "green";
+      if (row.availability === "no") colour = "red";
+      if (row.availability === "maybe") colour = "orange";
 
       div.innerHTML =
-        `${row.PlayerName}: <strong style="color:${colour}">${row.Availability}</strong>`;
+        `${row.playername}: <strong style="color:${colour}">${row.availability}</strong>`;
 
       list.appendChild(div);
     });
@@ -167,7 +155,6 @@ document.getElementById("matchId").addEventListener("change", (e) => {
 // Initial load
 //
 document.addEventListener("DOMContentLoaded", loadFixtures);
-
 </script>
 
 </body>
