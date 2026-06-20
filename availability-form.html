@@ -70,93 +70,97 @@
 </div>
 
   <script>
-    const apiBase = "/api";
+const apiBase = "/api";
 
+// Load players + matches from the Neon-backed API
+async function loadFormData() {
+  try {
+    const res = await fetch(apiBase + "/getavailability");
+    if (!res.ok) throw new Error("Failed to load availability data");
 
-    async function loadFormData() {
-      try {
-        const res = await fetch(apiBase + "/getavailability");
-        if (!res.ok) {
-          throw new Error("Failed to load players and fixtures");
-        }
+    const data = await res.json();
 
-        const data = await res.json();
+    const playerSelect = document.getElementById("playerId");
+    const matchSelect = document.getElementById("matchId");
 
-        const playerSelect = document.getElementById("playerId");
-        const matchSelect = document.getElementById("matchId");
+    playerSelect.innerHTML = '<option value="">Select player</option>';
+    matchSelect.innerHTML = '<option value="">Select match</option>';
 
-        const selectedPlayer = playerSelect.value;
-        const selectedMatch = matchSelect.value;
+    // Extract unique players
+    const uniquePlayers = [...new Map(
+      data.map(p => [p.playerid, p])
+    ).values()];
 
-        playerSelect.innerHTML = '<option value="">Select player</option>';
-        matchSelect.innerHTML = '<option value="">Select match</option>';
+    uniquePlayers.sort((a, b) => a.playername.localeCompare(b.playername));
 
-        data.players.forEach(p => {
-          const opt = document.createElement("option");
-          opt.value = p.PlayerId;
-          opt.textContent = p.PlayerName;
-          if (String(p.PlayerId) === String(selectedPlayer)) {
-            opt.selected = true;
-          }
-          playerSelect.appendChild(opt);
-        });
-
-        data.fixtures.forEach(m => {
-          const opt = document.createElement("option");
-          opt.value = m.MatchId;   // keep exact string as-is
-          opt.textContent = `${m.MatchName} (${m.MatchId})`;
-          if (String(m.MatchId) === String(selectedMatch)) {
-            opt.selected = true;
-          }
-          matchSelect.appendChild(opt);
-        });
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById("result").innerHTML =
-          "<span style='color:red;'>Error loading players or fixtures.</span>";
-      }
-    }
-
-    document.getElementById("availabilityForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const payload = {
-        matchId: document.getElementById("matchId").value,
-        playerId: parseInt(document.getElementById("playerId").value, 10),
-        availability: document.getElementById("availability").value
-      };
-
-      if (!payload.matchId || !payload.playerId || !payload.availability) {
-        document.getElementById("result").innerHTML =
-          "<span style='color:red;'>Please select a player, a match and an availability option.</span>";
-        return;
-      }
-
-      try {
-        const response = await fetch(apiBase + "/submitavailability", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const result = document.getElementById("result");
-
-        if (response.ok) {
-          result.innerHTML = "<span style='color:green;'>Availability saved.</span>";
-        } else {
-          const text = await response.text();
-          result.innerHTML = "<span style='color:red;'>Error: " + text + "</span>";
-        }
-      } catch (err) {
-        console.error(err);
-        document.getElementById("result").innerHTML =
-          "<span style='color:red;'>Submit failed.</span>";
-      }
+    uniquePlayers.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.playerid;
+      opt.textContent = p.playername;
+      playerSelect.appendChild(opt);
     });
 
-    document.addEventListener("DOMContentLoaded", loadFormData);
-  </script>
+    // Extract unique matches
+    const uniqueMatches = [...new Map(
+      data.map(m => [m.matchid, m])
+    ).values()];
+
+    uniqueMatches.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.matchid;
+      opt.textContent = m.matchid;
+      matchSelect.appendChild(opt);
+    });
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("result").innerHTML =
+      "<span style='color:red;'>Error loading players or matches.</span>";
+  }
+}
+
+// Handle form submission
+document.getElementById("availabilityForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    matchId: document.getElementById("matchId").value,
+    playerId: parseInt(document.getElementById("playerId").value, 10),
+    availability: document.getElementById("availability").value
+  };
+
+  if (!payload.matchId || !payload.playerId || !payload.availability) {
+    document.getElementById("result").innerHTML =
+      "<span style='color:red;'>Please select a player, a match and an availability option.</span>";
+    return;
+  }
+
+  try {
+    const response = await fetch(apiBase + "/submitavailability", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      document.getElementById("result").innerHTML =
+        "<span style='color:green;'>Availability saved.</span>";
+    } else {
+      document.getElementById("result").innerHTML =
+        "<span style='color:red;'>Error: " + (result.error || "Unknown error") + "</span>";
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById("result").innerHTML =
+      "<span style='color:red;'>Submit failed.</span>";
+  }
+});
+
+document.addEventListener("DOMContentLoaded", loadFormData);
+</script>
+
 <script>
 document.getElementById("missingPlayerForm").addEventListener("submit", function(e) {
   e.preventDefault();
