@@ -1,45 +1,44 @@
-const sql = require('mssql');
+const { Pool } = require('pg');
+
+const pool = new Pool({
+    connectionString: process.env.NEON_CONNECTION_STRING
+});
 
 module.exports = async function (context, req) {
+    context.log("submitAvailability called");
 
-    // Support BOTH JSON body and query string
-    const playerId = req.body?.playerId || req.query.playerId;
-    const matchId = req.body?.matchId || req.query.matchId;
-    const availability = req.body?.availability || req.query.availability;
+    context.res = {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json"
+        }
+    };
 
-    // Validate required fields
-    if (!playerId || !matchId || !availability) {
-        context.res = {
-            status: 400,
-            body: "Missing required fields: playerId, matchId, availability"
-        };
+    // Support JSON body
+    const { matchId, playerId, availability } = req.body || {};
+
+    if (!matchId || !playerId || !availability) {
+        context.res.status = 400;
+        context.res.body = { error: "matchId, playerId and availability are required" };
         return;
     }
 
     try {
-        await sql.connect(process.env.SQL_CONNECTION_STRING);
+        const result = await pool.query(
+            `
+            INSERT INTO matchavailability (matchid, playerid, availability, lastupdated)
+            VALUES ($1, $2, $3, NOW())
+            RETURNING *;
+            `,
+            [matchId, playerId, availability]
+        );
 
-        await sql.query`
-            MERGE MatchAvailability AS target
-            USING (SELECT ${matchId} AS MatchId, ${playerId} AS PlayerId) AS source
-            ON target.MatchId = source.MatchId AND target.PlayerId = source.PlayerId
-            WHEN MATCHED THEN
-                UPDATE SET Availability = ${availability}, LastUpdated = GETDATE()
-            WHEN NOT MATCHED THEN
-                INSERT (MatchId, PlayerId, Availability, LastUpdated)
-                VALUES (${matchId}, ${playerId}, ${availability}, GETDATE());
-        `;
-
-        context.res = {
-            status: 200,
-            body: "Saved"
-        };
-
+        context.res.body = { success: true, record: result.rows[0] };
     } catch (err) {
-        context.res = {
-            status: 500,
-            body: err.message
-        };
+        context.log("Error:", err);
+        context.res.status = 500;
+        context.res.body = { error: "Database error", details: err.message };
     }
 };
+
 
