@@ -30,9 +30,20 @@ module.exports = async function (context, req) {
 
         context.res.body = result.rows;
     } catch (err) {
-        context.log("Error:", err);
+        // 🔥 This is the important part — full error visibility
+        context.log("FULL POSTGRES ERROR OBJECT:", err);
+
         context.res.status = 500;
-        context.res.body = { error: "Database error", details: err.message };
+        context.res.body = {
+            error: "Database error",
+            message: err.message || null,
+            code: err.code || null,
+            detail: err.detail || null,
+            hint: err.hint || null,
+            where: err.where || null,
+            stack: err.stack || null
+        };
     }
 };
+
 
