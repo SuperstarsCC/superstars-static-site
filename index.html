@@ -59,18 +59,42 @@
         animation: slideUp 0.6s ease-out;
     }
 
-    iframe {
-        width: 100%;
-        border: none;
-        border-radius: 8px;
-    }
-
     /* Tabs */
     .tab-content {
         display: none;
     }
     .tab-content.active {
         display: block;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 20px;
+        margin-right: 10px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        font-weight: 600;
+        color: white;
+    }
+    .yes { background: #28a745; }
+    .no { background: #dc3545; }
+    .maybe { background: #ffc107; color: #222; }
+
+    /* Table */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+    th {
+        background: #003399;
+        color: white;
     }
 
     /* Toast Message */
@@ -113,22 +137,103 @@
 </style>
 
 <script>
-    function showTab(tabId, element) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
+function showTab(tabId, element) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
 
-        document.querySelectorAll('.navbar a').forEach(a => a.classList.remove('active'));
-        element.classList.add('active');
+    document.querySelectorAll('.navbar a').forEach(a => a.classList.remove('active'));
+    element.classList.add('active');
+}
+
+const apiBase = "https://players-availability-cscwezcuhgfmheay.uksouth-01.azurewebsites.net/api";
+
+// Load fixtures and players on page load
+window.onload = async () => {
+    await loadFixtures();
+    await loadPlayers();
+};
+
+// Load fixtures into dropdown
+async function loadFixtures() {
+    const res = await fetch(`${apiBase}/getFixtures`);
+    const fixtures = await res.json();
+
+    const select = document.getElementById("fixtureSelect");
+    select.innerHTML = "";
+
+    fixtures.forEach(f => {
+        const option = document.createElement("option");
+        option.value = f.matchid;
+        option.textContent = f.matchname;
+        select.appendChild(option);
+    });
+
+    if (fixtures.length > 0) {
+        loadAvailability(fixtures[0].matchid);
     }
 
-    // Toast trigger from iframe
-    window.addEventListener("message", function(event) {
-        if (event.data === "availabilitySubmitted") {
-            let toast = document.getElementById("toast");
-            toast.classList.add("show");
-            setTimeout(() => toast.classList.remove("show"), 3000);
-        }
+    select.onchange = () => loadAvailability(select.value);
+}
+
+// Load players into dropdown
+async function loadPlayers() {
+    const res = await fetch(`${apiBase}/getPlayers`);
+    const players = await res.json();
+
+    const select = document.getElementById("playerSelect");
+    select.innerHTML = "";
+
+    players.forEach(p => {
+        const option = document.createElement("option");
+        option.value = p.playerid;
+        option.textContent = p.playername;
+        select.appendChild(option);
     });
+}
+
+// Submit availability
+async function submitAvailability(status) {
+    const matchid = document.getElementById("fixtureSelect").value;
+    const playerid = document.getElementById("playerSelect").value;
+
+    const res = await fetch(`${apiBase}/submitAvailability`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchid, playerid, availability: status })
+    });
+
+    const result = await res.json();
+
+    showToast("Availability Submitted ✔");
+    loadAvailability(matchid);
+}
+
+// Load availability table
+async function loadAvailability(matchid) {
+    const res = await fetch(`${apiBase}/getMatchAvailability?matchid=${matchid}`);
+    const rows = await res.json();
+
+    const tbody = document.querySelector("#availabilityTable tbody");
+    tbody.innerHTML = "";
+
+    rows.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${r.playername}</td>
+            <td>${r.availability}</td>
+            <td>${new Date(r.lastupdated).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Toast
+function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3000);
+}
 </script>
 
 </head>
@@ -146,28 +251,46 @@
     <a href="#" onclick="showTab('fixturesTab', this)">Fixtures</a>
 </div>
 
-<!-- Tabs Content -->
+<!-- Submit Availability Tab -->
 <div id="formTab" class="tab-content active">
     <div class="section">
         <h3>Submit Your Availability</h3>
-        <iframe
-            src="/availability-form.html"
 
-            height="900">
-        </iframe>
+        <label>Select Match:</label>
+        <select id="fixtureSelect"></select>
+
+        <br><br>
+
+        <label>Select Player:</label>
+        <select id="playerSelect"></select>
+
+        <br><br>
+
+        <button class="btn yes" onclick="submitAvailability('Yes')">Yes</button>
+        <button class="btn no" onclick="submitAvailability('No')">No</button>
+        <button class="btn maybe" onclick="submitAvailability('Maybe')">Maybe</button>
     </div>
 </div>
 
+<!-- Viewer Tab -->
 <div id="viewerTab" class="tab-content">
     <div class="section">
         <h3>Live Availability Viewer</h3>
-        <iframe
-            src="/availability-viewer.html"
-            height="900">
-        </iframe>
+
+        <table id="availabilityTable">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Availability</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 </div>
 
+<!-- Fixtures Tab -->
 <div id="fixturesTab" class="tab-content">
     <div class="section">
         <h3>Fixtures</h3>
@@ -179,8 +302,8 @@
 </div>
 
 <!-- Toast -->
-<div id="toast">Availability Submitted ✔</div>
+<div id="toast"></div>
+
 </body>
 </html>
 
-<div id="toast">Submitted successfully
