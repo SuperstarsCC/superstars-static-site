@@ -256,15 +256,16 @@ function showToast(msg) {
     <div class="section">
         <h3>Submit Your Availability</h3>
 
+        <label>Select Player:</label>
+        <select id="playerSelect"></select>
+
+        <br><br>
+        
         <label>Select Match:</label>
         <select id="fixtureSelect"></select>
 
         <br><br>
 
-        <label>Select Player:</label>
-        <select id="playerSelect"></select>
-
-        <br><br>
 
         <button class="btn yes" onclick="submitAvailability('Yes')">Yes</button>
         <button class="btn no" onclick="submitAvailability('No')">No</button>
