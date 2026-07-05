@@ -151,7 +151,9 @@ const apiBase = "https://players-availability-cscwezcuhgfmheay.uksouth-01.azurew
 window.onload = async () => {
     await loadFixtures();
     await loadPlayers();
+    await loadViewerFixtures();   // <-- add this line
 };
+
 
 // Load fixtures into dropdown
 async function loadFixtures() {
@@ -175,6 +177,27 @@ async function loadFixtures() {
     select.onchange = () => loadAvailability(select.value);
 }
 
+async function loadViewerFixtures() {
+    const res = await fetch(`${apiBase}/getFixtures`);
+    const fixtures = await res.json();
+
+    const select = document.getElementById("viewerFixtureSelect");
+    select.innerHTML = "";
+
+    fixtures.forEach(f => {
+        const option = document.createElement("option");
+        option.value = f.matchid;
+        option.textContent = f.matchname;
+        select.appendChild(option);
+    });
+
+    if (fixtures.length > 0) {
+        loadAvailability(fixtures[0].matchid);
+    }
+
+    select.onchange = () => loadAvailability(select.value);
+}
+    
 // Load players into dropdown
 async function loadPlayers() {
     const res = await fetch(`${apiBase}/getPlayers`);
@@ -191,6 +214,9 @@ async function loadPlayers() {
     });
 }
 
+
+
+    
 // Submit availability
 async function submitAvailability(status) {
     const matchid = document.getElementById("fixtureSelect").value;
@@ -220,7 +246,15 @@ async function loadAvailability(matchid) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${r.playername}</td>
-            <td>${r.availability}</td>
+            <td style="font-weight:600; color:${
+    r.availability === "Yes" ? "green" :
+    r.availability === "No" ? "red" :
+    r.availability === "Maybe" ? "goldenrod" :
+    "#222"
+};">
+    ${r.availability}
+</td>
+
             <td>${new Date(r.lastupdated).toLocaleString()}</td>
         `;
         tbody.appendChild(tr);
@@ -319,6 +353,11 @@ async function submitMissingName() {
     <div class="section">
         <h3>Live Availability Viewer</h3>
 
+        <label>Select Match:</label>
+        <select id="viewerFixtureSelect"></select>
+
+        <br><br>
+
         <table id="availabilityTable">
             <thead>
                 <tr>
@@ -331,6 +370,7 @@ async function submitMissingName() {
         </table>
     </div>
 </div>
+
 
 <!-- Fixtures Tab -->
 <div id="fixturesTab" class="tab-content">
