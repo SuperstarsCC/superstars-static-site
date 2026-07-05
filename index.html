@@ -161,6 +161,9 @@ async function loadFixtures() {
     const res = await fetch(`${apiBase}/getFixtures`);
     const fixtures = await res.json();
 
+    // ⭐ Sort numerically by matchid (fixes 1,10,11,2,3 issue)
+    fixtures.sort((a, b) => Number(a.matchid) - Number(b.matchid));
+
     const select = document.getElementById("fixtureSelect");
     select.innerHTML = "";
 
@@ -171,12 +174,15 @@ async function loadFixtures() {
         select.appendChild(option);
     });
 
+    // ⭐ Keep this — it loads the first match automatically
     if (fixtures.length > 0) {
         loadAvailability(fixtures[0].matchid);
     }
 
+    // ⭐ Keep this — it updates availability when user changes match
     select.onchange = () => loadAvailability(select.value);
 }
+
 
 async function loadViewerFixtures() {
     const res = await fetch(`${apiBase}/getFixtures`);
@@ -226,6 +232,9 @@ async function loadPlayers() {
     const res = await fetch(`${apiBase}/getPlayers`);
     const players = await res.json();
 
+    // ⭐ Sort alphabetically by playername
+    players.sort((a, b) => a.playername.localeCompare(b.playername));
+
     const select = document.getElementById("playerSelect");
     select.innerHTML = "";
 
@@ -236,6 +245,7 @@ async function loadPlayers() {
         select.appendChild(option);
     });
 }
+
 
 async function loadPlayerHistory(playerid) {
     const res = await fetch(`${apiBase}/getAvailability`);
