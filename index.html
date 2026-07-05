@@ -151,7 +151,8 @@ const apiBase = "https://players-availability-cscwezcuhgfmheay.uksouth-01.azurew
 window.onload = async () => {
     await loadFixtures();
     await loadPlayers();
-    await loadViewerFixtures();   // <-- add this line
+    await loadViewerFixtures();
+    await loadViewerPlayers();   // <-- add this line
 };
 
 
@@ -198,7 +199,29 @@ async function loadViewerFixtures() {
     select.onchange = () => loadAvailability(select.value);
 }
     
-// Load players into dropdown
+async function loadViewerPlayers() {
+    const res = await fetch(`${apiBase}/getPlayers`);
+    const players = await res.json();
+
+    const select = document.getElementById("viewerPlayerSelect");
+    select.innerHTML = "";
+
+    players.forEach(p => {
+        const option = document.createElement("option");
+        option.value = p.playerid;
+        option.textContent = p.playername;
+        select.appendChild(option);
+    });
+
+    if (players.length > 0) {
+        loadPlayerHistory(players[0].playerid);
+    }
+
+    select.onchange = () => loadPlayerHistory(select.value);
+}
+
+    
+    // Load players into dropdown
 async function loadPlayers() {
     const res = await fetch(`${apiBase}/getPlayers`);
     const players = await res.json();
@@ -214,6 +237,32 @@ async function loadPlayers() {
     });
 }
 
+async function loadPlayerHistory(playerid) {
+    const res = await fetch(`${apiBase}/getAvailability`);
+    const rows = await res.json();
+
+    const tbody = document.querySelector("#playerHistoryTable tbody");
+    tbody.innerHTML = "";
+
+    const filtered = rows.filter(r => r.playerid == playerid);
+
+    filtered.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${r.matchname || r.matchid}</td>
+            <td style="font-weight:600; color:${
+                r.availability === "Yes" ? "green" :
+                r.availability === "No" ? "red" :
+                r.availability === "Maybe" ? "goldenrod" :
+                "#222"
+            };">
+                ${r.availability}
+            </td>
+            <td>${new Date(r.lastupdated).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
 
     
@@ -353,6 +402,7 @@ async function submitMissingName() {
     <div class="section">
         <h3>Live Availability Viewer</h3>
 
+        <!-- Match-based viewer -->
         <label>Select Match:</label>
         <select id="viewerFixtureSelect"></select>
 
@@ -369,7 +419,28 @@ async function submitMissingName() {
             <tbody></tbody>
         </table>
     </div>
+
+    <div class="section">
+        <h3>Player Availability History</h3>
+
+        <label>Select Player:</label>
+        <select id="viewerPlayerSelect"></select>
+
+        <br><br>
+
+        <table id="playerHistoryTable">
+            <thead>
+                <tr>
+                    <th>Match</th>
+                    <th>Availability</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 </div>
+
 
 
 <!-- Fixtures Tab -->
