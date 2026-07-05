@@ -162,7 +162,7 @@ async function loadFixtures() {
     const fixtures = await res.json();
 
     // ⭐ Sort numerically by matchid (fixes 1,10,11,2,3 issue)
-    fixtures.sort((a, b) => Number(a.matchid) - Number(b.matchid));
+    fixtures.sort((a, b) => new Date(a.matchdate) - new Date(b.matchdate));
 
     const select = document.getElementById("fixtureSelect");
     select.innerHTML = "";
@@ -188,6 +188,9 @@ async function loadViewerFixtures() {
     const res = await fetch(`${apiBase}/getFixtures`);
     const fixtures = await res.json();
 
+    // ⭐ Sort by real matchdate
+    fixtures.sort((a, b) => new Date(a.matchdate) - new Date(b.matchdate));
+
     const select = document.getElementById("viewerFixtureSelect");
     select.innerHTML = "";
 
@@ -204,6 +207,7 @@ async function loadViewerFixtures() {
 
     select.onchange = () => loadAvailability(select.value);
 }
+
     
 async function loadViewerPlayers() {
     const res = await fetch(`${apiBase}/getPlayers`);
@@ -256,6 +260,9 @@ async function loadPlayerHistory(playerid) {
 
     const filtered = rows.filter(r => r.playerid == playerid);
 
+    // ⭐ Sort by real matchdate
+    filtered.sort((a, b) => new Date(a.matchdate) - new Date(b.matchdate));
+
     filtered.forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -273,6 +280,7 @@ async function loadPlayerHistory(playerid) {
         tbody.appendChild(tr);
     });
 }
+
 
 
     
